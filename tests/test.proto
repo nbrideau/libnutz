@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package test;
+
+message Time {
+    uint64 time = 1;
+}
+
