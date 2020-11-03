@@ -17,19 +17,19 @@ ServProto::~ServProto(void) {
 /*****************************************************************************
  *
  *****************************************************************************/
-ProtoData::ProtoData(ServBase * serv) 
-: ServerData(serv) {
-    SetClassName("ProtoData");
+ProtoCon::ProtoCon(ServBase * serv) 
+: ServerCon(serv) {
+    SetClassName("ProtoCon");
     return;
 }
 
-ProtoData::~ProtoData(void) {
+ProtoCon::~ProtoCon(void) {
     return;
 }
 
 
 // Message pump
-void ProtoData::ProcessMsg(void * msg) {
+void ProtoCon::ProcessMsg(void * msg) {
     ServProto  * server  = (ServProto *)m_serv;
     
     /*

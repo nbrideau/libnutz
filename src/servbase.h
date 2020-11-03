@@ -11,21 +11,60 @@
 #include "thread.h"
 #include "sockbase.h"
 
-class ServBase;
-class ThreadPool;
+class ServerCon;
+
 /** 
- * @class ServerData
+ * @brief A pool of worker threads spawned by accept 
+ * This is a list of all our server connections to clients.
+ */
+class ServerConPool : public Thread {
+    public:
+        ServerConPool(void);
+        virtual ~ServerConPool(void);
+
+    public:
+        bool Stop(pthread_t tid);
+        bool Kill(pthread_t tid);
+        bool Start(void *(*pthread_func)(void *), ServerCon * arg);
+        void Pause(pthread_t tid);
+        void Pause(pthread_t tid, unsigned int secs);
+        void Resume(pthread_t tid);
+        bool IsPaused(pthread_t tid);
+        bool IsStarted(pthread_t tid);
+
+        void Shutdown(void);
+        int  GetNumThreads(void);
+    
+#ifndef THREAD_NO_DETACH
+        bool    RemoveThread(pthread_t tid);
+#endif
+    protected:
+        virtual void Run(void);
+
+    protected:
+        ServerCon * GetThread(pthread_t tid);
+
+    protected:
+        List<ServerCon> m_threads;  /**< List of threads */
+};
+ 
+
+class ServBase;
+/** 
+ * @class ServerCon
  *
- * Utility for passing server data to new thread on accept
+ * This is a connection from a client to a server. 
+ * It runs in it's own thread. Place all message handling
+ * in a subclass of this. Real work happens here.
  *
  * Per thread storage and thread control
  */
-class ServerData : public Thread {
+class ServerCon : public Thread {
     friend class ServBase;
-    friend class ThreadPool;
+    friend class ServerConPool;
     public:
-        ServerData(ServBase * serv);
-        virtual ~ServerData(void);
+        ServerCon(ServBase * serv);
+        virtual ~ServerCon(void);
     
     // Message handling
     public:
@@ -67,41 +106,6 @@ class ServerData : public Thread {
 
 
 /** 
- * @brief A pool of worker threads spawned by accept 
- * Cant put in thread.h due to mutual dependacies 
- */
-class ThreadPool : public Thread {
-    public:
-        ThreadPool(void);
-        virtual ~ThreadPool(void);
-
-    public:
-        bool Stop(pthread_t tid);
-        bool Kill(pthread_t tid);
-        bool Start(void *(*pthread_func)(void *), ServerData * arg);
-        void Pause(pthread_t tid);
-        void Pause(pthread_t tid, unsigned int secs);
-        void Resume(pthread_t tid);
-        bool IsPaused(pthread_t tid);
-        bool IsStarted(pthread_t tid);
-
-        void Shutdown(void);
-        int  GetNumThreads(void);
-    
-#ifndef THREAD_NO_DETACH
-        bool    RemoveThread(pthread_t tid);
-#endif
-    protected:
-        virtual void Run(void);
-
-    protected:
-        ServerData * GetThread(pthread_t tid);
-
-    protected:
-        List<ServerData> m_threads;  /**< List of threads */
-};
-
-/** 
  * @class ServBase 
  * @todo add conditionals to indicate shutdown
  * Base server class. All servers will be one of these  
@@ -117,7 +121,7 @@ class ServBase : public Thread  {
     public:
         // Class factories for overrides
         virtual SockBase * Create() = 0;
-        virtual ServerData * ServerDataFactory(void) = 0;
+        virtual ServerCon * ServerConFactory(void) = 0;
         
     public:
         // Accept thread
@@ -137,15 +141,12 @@ class ServBase : public Thread  {
         int         m_dbgconnected;
 #endif
 
-        int          m_maxclients;  /**< Maximum allowed connections */
+        int         m_maxclients;  /**< Maximum allowed connections */
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-        Addr       m_addr;        /**< Server address             */
+        Addr        m_addr;        /**< Server address             */
         SockBase *  m_sock;        /**< Server socket              */
 #endif
-        ThreadPool m_pool;        /**< Thread pool */
+        ServerConPool m_pool;      /**< Connection pool */
 };
- 
-
-
 
 #endif

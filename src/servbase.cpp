@@ -7,56 +7,18 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-/*****************************************************************************
- *
- *****************************************************************************/
-ServerData::ServerData(ServBase * server) {
-    SetClassName("ServerData");
-    m_serv = server;
-    m_sock = m_serv->Create();
-    return;
-}
-
-ServerData::~ServerData(void) {
-    delete m_sock;
-    return;
-}
-
-ServBase * ServerData::Server(void) {
-    return m_serv;
-}
-
-SockBase * ServerData::Socket(void) {
-    return m_sock;
-}
-
-Addr * ServerData::GetAddr(void) {
-    return m_sock->GetAddr();
-}
-
-pthread_t ServerData::ThreadId(void) {
-    return m_thread;
-}
-
-void ServerData::SetThreadId(pthread_t tid) {
-#ifndef THREAD_NO_DETACH
-    m_detached  = true;
-#endif
-    m_thread    = tid;
-    return;
-}
 
 /*****************************************************************************
  *
  *****************************************************************************/
-ThreadPool::ThreadPool(void) 
+ServerConPool::ServerConPool(void) 
 : Thread(true), m_threads() {
-    SetClassName("ThreadPool");
+    SetClassName("ServerConPool");
     //Thread::Start();
     return;
 }
 
-ThreadPool::~ThreadPool(void) {
+ServerConPool::~ServerConPool(void) {
     // Stop cleaning thread
     Thread::Stop();
     // Shutdown all other threads
@@ -67,7 +29,7 @@ ThreadPool::~ThreadPool(void) {
 
 
 // Note: This is too much like gsthread
-bool ThreadPool::Start(void *(*pthread_func)(void *), ServerData * arg) {
+bool ServerConPool::Start(void *(*pthread_func)(void *), ServerCon * arg) {
     int rv;
     pthread_t tid;
     pthread_attr_t attr;
@@ -78,7 +40,7 @@ bool ThreadPool::Start(void *(*pthread_func)(void *), ServerData * arg) {
     if ((rv = pthread_attr_init(&attr))) {
         /* ENOMEM Insufficient memory exists to initialize the  thread  attributes
               object.  */
-        LogSysError("::ThreadPool pthread_attr_init");
+        LogSysError("::ServerConPool pthread_attr_init");
         return false;
     }
 
@@ -93,7 +55,7 @@ bool ThreadPool::Start(void *(*pthread_func)(void *), ServerData * arg) {
         /* 
             EINVAL The value of detachstate was not valid
         */
-        LogSysError("::ThreadPool pthread_attr_setstacksize");
+        LogSysError("::ServerConPool pthread_attr_setstacksize");
         pthread_attr_destroy(&attr);
         return false;
 
@@ -107,7 +69,7 @@ bool ThreadPool::Start(void *(*pthread_func)(void *), ServerData * arg) {
         /* 
             EINVAL The value of detachstate was not valid
         */
-        LogSysError("::ThreadPool pthread_attr_setdetachstate");
+        LogSysError("::ServerConPool pthread_attr_setdetachstate");
         pthread_attr_destroy(&attr);
         return false;
     }
@@ -132,7 +94,7 @@ bool ThreadPool::Start(void *(*pthread_func)(void *), ServerData * arg) {
               required scheduling parameters or scheduling policy.
         */
         //Log(LL_ERROR, "PTHREAD_THREAD_MAX:%d", PTHREAD_THREAD_MAX);
-        LogSysError("::ThreadPool pthread_create");
+        LogSysError("::ServerConPool pthread_create");
         pthread_attr_destroy(&attr);
         arg->m_running = false;
         arg->m_lock.UnLock();
@@ -149,18 +111,18 @@ bool ThreadPool::Start(void *(*pthread_func)(void *), ServerData * arg) {
 
 // NB No longer Used
 // Threadpool houskeeping routine
-void ThreadPool::Run(void) {
+void ServerConPool::Run(void) {
 
     // Hack to make sure the threads all get cleaned up on shutdown.
     m_threads.Lock();
-    ServerData * node = m_threads.GetHead();
+    ServerCon * node = m_threads.GetHead();
     while (node) {
         // Shutdown threads cleanup make sure socket not still open
         if (!node->IsRunning() && !node->IsConnected()) {
             Log(LL_DEBUG, "Removing connection. %u left.", m_threads.Size());
             m_threads.RemoveCurr();
         }
-        // Stopping thread causes crash???
+        // XXX Stopping thread causes crash???
         // Stop stale connections 60 seconds
         else if ((time(NULL) - node->LastUpdate()) > 60) {
             //Log(LL_ERROR, "Stopping connection.");
@@ -173,9 +135,9 @@ void ThreadPool::Run(void) {
     return;
 }
 
-void ThreadPool::Shutdown(void) {
+void ServerConPool::Shutdown(void) {
     m_threads.Lock();
-    ServerData * node = m_threads.GetHead();
+    ServerCon * node = m_threads.GetHead();
     while (node) {
         node->Stop();
         node = m_threads.GetNext();
@@ -184,13 +146,13 @@ void ThreadPool::Shutdown(void) {
     return;
 }
 
-int ThreadPool::GetNumThreads(void) {
+int ServerConPool::GetNumThreads(void) {
     return m_threads.Size();
 }
 
-ServerData * ThreadPool::GetThread(pthread_t tid) {
+ServerCon * ServerConPool::GetThread(pthread_t tid) {
     m_threads.Lock();
-    ServerData * node = m_threads.GetHead();
+    ServerCon * node = m_threads.GetHead();
     while (node) {
         if (node->ThreadId() == tid) {
             m_threads.UnLock();
@@ -202,9 +164,9 @@ ServerData * ThreadPool::GetThread(pthread_t tid) {
     return NULL;
 }
 
-bool ThreadPool::Stop(pthread_t tid) {
+bool ServerConPool::Stop(pthread_t tid) {
     bool rv;
-    ServerData * thread;
+    ServerCon * thread;
     m_threads.Lock();
     if (!(thread = GetThread(tid))) {
         m_threads.UnLock();
@@ -215,11 +177,10 @@ bool ThreadPool::Stop(pthread_t tid) {
     return rv;
 }
 
-
 #ifndef THREAD_NO_DETACH
-bool ThreadPool::RemoveThread(pthread_t tid) {
+bool ServerConPool::RemoveThread(pthread_t tid) {
     bool rv;
-    ServerData * thread;
+    ServerCon * thread;
     m_threads.Lock();
     if (!(thread = GetThread(tid))) {
         Log(LL_ERROR, "Attempting to remove thread which does not exist");
@@ -233,9 +194,9 @@ bool ThreadPool::RemoveThread(pthread_t tid) {
 }
 #endif
 
-bool ThreadPool::Kill(pthread_t tid) {
+bool ServerConPool::Kill(pthread_t tid) {
     bool rv;
-    ServerData * thread;
+    ServerCon * thread;
     m_threads.Lock();
     if (!(thread = GetThread(tid))) {
         m_threads.UnLock();
@@ -247,36 +208,76 @@ bool ThreadPool::Kill(pthread_t tid) {
     return rv;
 }
 
-void ThreadPool::Pause(pthread_t tid) {
-    ServerData * thread;
+void ServerConPool::Pause(pthread_t tid) {
+    ServerCon * thread;
     if (!(thread = GetThread(tid))) return;
     return thread->Pause();
 }
 
-void ThreadPool::Pause(pthread_t tid, unsigned int secs) {
-    ServerData * thread;
+void ServerConPool::Pause(pthread_t tid, unsigned int secs) {
+    ServerCon * thread;
     if (!(thread = GetThread(tid))) return;
     return thread->Pause(secs);
 }
 
-void ThreadPool::Resume(pthread_t tid) {
-    ServerData * thread;
+void ServerConPool::Resume(pthread_t tid) {
+    ServerCon * thread;
     if (!(thread = GetThread(tid))) return;
     return thread->Resume();
 }
 
-bool ThreadPool::IsPaused(pthread_t tid) {
-    ServerData * thread;
+bool ServerConPool::IsPaused(pthread_t tid) {
+    ServerCon * thread;
     if (!(thread = GetThread(tid))) return false;
     return thread->IsPaused();
 }
 
-bool ThreadPool::IsStarted(pthread_t tid) {
-    ServerData * thread;
+bool ServerConPool::IsStarted(pthread_t tid) {
+    ServerCon * thread;
     if (!(thread = GetThread(tid))) return false;
     return thread->IsRunning();
 }
 
+
+
+/*****************************************************************************
+ *
+ *****************************************************************************/
+ServerCon::ServerCon(ServBase * server) {
+    SetClassName("ServerCon");
+    m_serv = server;
+    m_sock = m_serv->Create();
+    return;
+}
+
+ServerCon::~ServerCon(void) {
+    delete m_sock;
+    return;
+}
+
+ServBase * ServerCon::Server(void) {
+    return m_serv;
+}
+
+SockBase * ServerCon::Socket(void) {
+    return m_sock;
+}
+
+Addr * ServerCon::GetAddr(void) {
+    return m_sock->GetAddr();
+}
+
+pthread_t ServerCon::ThreadId(void) {
+    return m_thread;
+}
+
+void ServerCon::SetThreadId(pthread_t tid) {
+#ifndef THREAD_NO_DETACH
+    m_detached  = true;
+#endif
+    m_thread    = tid;
+    return;
+}
 
 /*****************************************************************************
  *
@@ -340,24 +341,24 @@ bool ServBase::Startup(void) {
 
 // Server accept loop
 void ServBase::Run(void) {
-    ServerData * data = NULL; // Data to pass to new thread
+    ServerCon * con = NULL; // Data to pass to new thread
     
     // Build server data
-    data = ServerDataFactory();
+    con = ServerConFactory();
 
     // Accept new connection
-    if (m_sock->Accept(data->Socket())) {
+    if (m_sock->Accept(con->Socket())) {
         Log(LL_DEBUG, "New connection from %s:%hu . Total: %d", 
-                data->GetAddr()->Ip(), data->GetAddr()->Port()
+                con->GetAddr()->Ip(), con->GetAddr()->Port()
                 , m_pool.GetNumThreads());
 
         // Check # connected clients
         if (m_pool.GetNumThreads() < m_maxclients) {
             // Spawn thread and start reading
             // Add to thread pool
-            if (!m_pool.Start(accept_thread, data)) {
+            if (!m_pool.Start(accept_thread, con)) {
                 Log(LL_ERROR, "[::Start] Error spawning thread");
-                delete data;
+                delete con;
             }
             else {
 #ifdef SRV_FORCE_HALT
@@ -372,12 +373,12 @@ void ServBase::Run(void) {
         }
         else {
             Log(LL_ERROR, "Max clients reached %u", m_maxclients);
-            data->OnMaxClients();
-            delete data;
+            con->OnMaxClients();
+            delete con;
         }
     }
     else {
-        delete data;
+        delete con;
     }       
 
     return; 
@@ -387,49 +388,49 @@ void ServBase::Run(void) {
 // Called after accept
 void * ServBase::accept_thread(void * arg) {
     void * msg = NULL;
-    // Setup gserverdata thread data
-    ServerData * data = (ServerData *)arg;
-    if (!data)  return NULL;
+    // Setup servercon thread con
+    ServerCon * con = (ServerCon *)arg;
+    if (!con)  return NULL;
 
     // Set timeout
-    data->SetTimeout(60);
+    con->SetTimeout(60);
 
     // Wait to finish startup
-    data->OnConnect();
+    con->OnConnect();
     
-    while (data->Loop() && data->Socket()->IsConnected()) {           
+    while (con->Loop() && con->Socket()->IsConnected()) {           
         try {
             // timeout
-            if (!data->RecvPacket(&msg)) {
+            if (!con->RecvPacket(&msg)) {
                 // 10 minute disconnect
-                if ((time(NULL) - data->LastUpdate()) > 900) {
-                    data->Server()->Log(LL_DEBUG, "15 minute timeout disconnecting.");
+                if ((time(NULL) - con->LastUpdate()) > 900) {
+                    con->Server()->Log(LL_DEBUG, "15 minute timeout disconnecting.");
                     break;
                 }
                 continue;
             }
             if (msg == NULL) 
-                data->Server()->Log(LL_DEBUG, "No packet!");
+                con->Server()->Log(LL_DEBUG, "No packet!");
             else {
-                data->ProcessMsg(msg);
-                data->DeletePacket(msg);
+                con->ProcessMsg(msg);
+                con->DeletePacket(msg);
             }
         } catch (Exception & e) {
             if (e.Severity() != GE_NONE) 
-                data->Server()->Log(LL_ERROR, "Shutting down socket: %s", e.Msg());
+                con->Server()->Log(LL_ERROR, "Shutting down socket: %s", e.Msg());
             break;
         } catch (...) {
-            data->Server()->Log(LL_ERROR, "Unknown exception caught");
+            con->Server()->Log(LL_ERROR, "Unknown exception caught");
             break;
         }
     } 
-    data->OnDisconnect();
-    data->Close();
-    data->Log(LL_DEBUG, "Closing connection from %s:%hu", data->GetAddr()->Ip(), data->GetAddr()->Port());
+    con->OnDisconnect();
+    con->Close();
+    con->Log(LL_DEBUG, "Closing connection from %s:%hu", con->GetAddr()->Ip(), con->GetAddr()->Port());
 
     // Force removal from thread pool
 #ifndef THREAD_NO_DETACH
-    data->Server()->m_pool.RemoveThread(data->m_thread);
+    con->Server()->m_pool.RemoveThread(con->m_thread);
 #endif
     return NULL;
 }

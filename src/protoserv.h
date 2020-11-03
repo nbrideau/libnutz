@@ -23,11 +23,10 @@ class ServProto : public ServBase  {
 };
  
 
-// FIXME Call this something other than XXXData
-class ProtoData : public ServerData {
+class ProtoCon : public ServerCon {
     public:
-        ProtoData(ServBase * serv);
-        virtual ~ProtoData(void);
+        ProtoCon(ServBase * serv);
+        virtual ~ProtoCon(void);
     
     // Message handling
     public:
