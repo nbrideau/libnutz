@@ -5,8 +5,10 @@
 #include <config.h>
 #endif
 
-#include <sys/socket.h>
 #include <netinet/in.h>
+
+// FIXME
+typedef unsigned char byte;
 
 /**
  @class Addr 

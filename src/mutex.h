@@ -32,7 +32,7 @@ class Mutex {
         bool                m_auto;     /**< If we are an "auto lock" or not */
 
     // Condition needs me
-    friend class GSCondition;
+    friend class Condition;
     protected:
         pthread_mutex_t *   m_mtx;      /**< Mutex pointer */
 };

@@ -30,3 +30,30 @@
 *.exe
 *.out
 *.app
+
+# Stuff I want ignored specifically
+*.swp
+*.pb.cc
+*.pb.h
+
+# Autotools cruft
+m4
+.deps
+.libs
+Makefile
+Makefile.in
+aclocal.m4
+config.h.in~
+autom4te.cache
+compile
+config.guess
+config.h
+config.log
+config.status
+config.sub
+configure
+depcomp
+install-sh
+libtool
+missing
+stamp-h1
