@@ -40,7 +40,8 @@ void  ProtoSock::DeleteMsg(void * msg) {
  * SEND
  * TODO Serialize and send as a single buffer?
  * TODO Use google::protobuf namespace
- * TODO Use something smaller than long unsigned int. 2 bytes? 
+ * TODO Use something smaller than long unsigned int. 2 bytes?
+ * TODO Use buffer class?
  *****************************************************************************/
 bool ProtoSock::SendMsg(void * send) {
     std::string buff;
@@ -55,7 +56,7 @@ bool ProtoSock::SendMsg(void * send) {
 #ifdef DEBUG_PACKETS
     Log(LL_DEBUG, "SEND: <%s>", buff.c_str()); // FIXME Just send message type
 #endif
-    //Log(LL_DEBUG, "[SENDING] %s", buff.c_str()); // PP output?
+    //Log(LL_DEBUG, "[SENDING] %s", buff.c_str()); // PP output? DebugString()?
     
     // Send the length the the buffer
     size_t size = msg->ByteSizeLong();
@@ -76,42 +77,38 @@ bool ProtoSock::SendMsg(void * send) {
  * RECV
  *****************************************************************************/
 bool ProtoSock::RecvMsg(void ** recv) {
-    // TODO Recieve length + buffer[length] unserialize...
-    /*
     bool done = false;
     int  recved = 0;
     unsigned int  i;
     *recv = NULL;
-
-    // Make sure we did not get multiple messages in a single read
-    for (i = 0; i < m_brecv; i++) {
-        if (m_buff[i] == '\0') 
-            return BuildMsg(recv, i);
+    size_t size;
+    
+    // Receive length
+    recved = Recv((byte *)size, sizeof(size_t));
+    if (recved < 0) {
+        throw Exception("[::RecvMsg] Error reading from socket");
     }
-   
-    // Lots of pointer arithmatic below
-    while (!done) {
-        recved = Recv(m_buff + m_brecv, MAX_PACKET_SIZE - m_brecv);
-        if (m_brecv + recved >= MAX_PACKET_SIZE) {
-            //m_buff[m_brecv + 1] = '\0';
-            //Log(LL_ERROR, "Msg %s", m_buff);
-            throw Exception("[::RecvMsg] Msg too large");
-        }
-        if (recved < 0) 
-            throw Exception("[::RecvMsg] Error reading from socket");
-        if (recved == 0)
-            return false;
-
-        // How many bytes we have recieved so far
-        m_brecv += recved;
-
-        // Check last few bytes for NULL terminator
-        for (i = m_brecv - recved; i < m_brecv; i++) {
-            if (m_buff[i] == '\0') 
-                return BuildMsg(recv, i);
-        }
+    if (recved == 0) {
+        return false;
     }
-    */
-    return false;
+
+    // Receive buffer TODO Something different.
+    byte * buff = new byte[size]; // FIXME Memory!!!
+    recved = Recv(buff, size);
+    if (recved < 0) {
+        throw Exception("[::RecvMsg] Error reading from socket");
+    }
+    if (recved == 0) {
+        return false;
+    }
+    if (recved < size) {
+        // TODO short reads. Put in a while loop...
+    }
+
+    // Build protobuf message
+    // TODO
+    // google::protobuf::Message * msg = new google::protobuf::Message()
+
+    return true;
 }
 
