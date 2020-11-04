@@ -175,7 +175,9 @@ bool Thread::Start(void) {
     }
 
 
-    /* XXX
+    /* NB: This was used on a project with a many
+           connected clients.
+
       8M Stacks OMG!!!! 8388608 Room for 256 threads
     size_t stacksize; 2G / 8M = 256
     pthread_attr_getstacksize(&attr, &stacksize);

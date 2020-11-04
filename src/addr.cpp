@@ -47,7 +47,8 @@
 /*****************************************************************************
  *
  *****************************************************************************/
-Addr::Addr(void) {
+Addr::Addr(void) 
+: ClassLogger("Addr") {
     m_ip[0] = '\0';
     m_addr.sin_family = AF_INET;       
     bzero(&m_addr, sizeof(sockaddr_in));
@@ -57,7 +58,8 @@ Addr::Addr(void) {
 /*****************************************************************************
  * Get peername from a socket
  *****************************************************************************/
-Addr::Addr(Addr & addr) {
+Addr::Addr(Addr & addr) 
+: ClassLogger("Addr") {
     m_ip[0] = '\0';
     memcpy(&m_addr, addr.GetSockAddr(), sizeof(sockaddr));
     inet_ntop(AF_INET, &(m_addr.sin_addr), m_ip, INET_ADDRSTRLEN);
@@ -68,7 +70,8 @@ Addr::Addr(Addr & addr) {
 /*****************************************************************************
  * Get peername from a socket
  *****************************************************************************/
-Addr::Addr(sockaddr * addr) {
+Addr::Addr(sockaddr * addr) 
+: ClassLogger("Addr") {
     m_ip[0] = '\0';
     memcpy(&m_addr, addr, sizeof(sockaddr_in));
     inet_ntop(AF_INET, &(m_addr.sin_addr), m_ip, INET_ADDRSTRLEN);
@@ -78,13 +81,13 @@ Addr::Addr(sockaddr * addr) {
 /*****************************************************************************
  * Get peername from a socket
  *****************************************************************************/
-Addr::Addr(int sock) {
+Addr::Addr(int sock) 
+: ClassLogger("Addr") {
     m_ip[0] = '\0';
     socklen_t len = sizeof(sockaddr_in);
     bzero(&m_addr, sizeof(sockaddr_in));
     if (getpeername(sock, (sockaddr *)&m_addr, &len)) {
-        // TODO 
-        //LogSysError("Addr::Addr getpeername");
+        LogSysError("Addr::Addr getpeername");
     }
     inet_ntop(AF_INET, &(m_addr.sin_addr), m_ip, INET_ADDRSTRLEN);
     return;
@@ -93,7 +96,8 @@ Addr::Addr(int sock) {
 /*****************************************************************************
  * Build by ip
  *****************************************************************************/
-Addr::Addr(const char *  ip, unsigned short port) {
+Addr::Addr(const char *  ip, unsigned short port) 
+: ClassLogger("Addr") {
     m_ip[0] = '\0';
     bzero(&m_addr, sizeof(sockaddr_in));
     m_addr.sin_family = AF_INET;
@@ -106,7 +110,8 @@ Addr::Addr(const char *  ip, unsigned short port) {
 /*****************************************************************************
  * Build by address
  *****************************************************************************/
-Addr::Addr(unsigned long ip, unsigned short port) {
+Addr::Addr(unsigned long ip, unsigned short port) 
+: ClassLogger("Addr") {
     m_ip[0] = '\0';
     bzero(&m_addr, sizeof(sockaddr_in));
     m_addr.sin_family       = AF_INET;       

@@ -305,7 +305,7 @@ int SockBase::Send(const byte * buff, size_t bytes) {
                 case EPIPE:
                     Close();
                     throw Exception("[Send] Connection closed"); 
-                case EAGAIN:        // TODO Return on timeout?
+                case EAGAIN:        // Return on timeout? Nah, this works...
                     Close();
                     throw Exception("[Send] Connection timed out"); 
                 case ECONNABORTED:

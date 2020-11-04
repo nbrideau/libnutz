@@ -8,6 +8,12 @@
 #include "addr.h"
 #include "logger.h"
 
+// TODO Where to put this functionality?
+// TODO Recv/Send Frame Header Length Delimited (size_t length, size bytes)
+// TODO Recv/Send Frame Footer Token  Delimited (char = '\0')
+//
+// TODO Callbacks on receiving messages?
+
 class SockBase : public ClassLogger {
     public:
         SockBase(void);
@@ -40,6 +46,9 @@ class SockBase : public ClassLogger {
         virtual bool SendPacket(void   * msg) = 0;
         virtual void DeletePacket(void * msg) = 0; /**< Memory management */
 
+        // 
+
+        // Actual sending and receiving
         virtual int  Send(const byte * buff, size_t bytes);
         virtual int  Recv(byte * buff, size_t bytes);
 

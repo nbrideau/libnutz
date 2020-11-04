@@ -6,6 +6,7 @@
 #endif
 
 #include <netinet/in.h>
+#include "logger.h"
 
 // FIXME
 typedef unsigned char byte;
@@ -16,7 +17,7 @@ typedef unsigned char byte;
 
     TODO: IPV6?
 */
-class Addr {
+class Addr : ClassLogger {
     public:
         Addr(void);
         Addr(int sock);

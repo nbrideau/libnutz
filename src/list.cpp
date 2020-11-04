@@ -132,7 +132,6 @@ void List<T>::AddCurr(T * data) {
         return AddHead(data);
     if (m_curr == m_tail) 
         return AddTail(data);
-    // XXX Test me
     llnode<T> * node = new llnode<T>;
     bzero(node, sizeof(llnode<T>));
     node->data = data;
