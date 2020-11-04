@@ -66,9 +66,9 @@ class ServerCon : public Thread {
         ServerCon(ServBase * serv);
         virtual ~ServerCon(void);
     
-    // Message handling
+    // Msg handling
     public:
-        // Message pump
+        // Msg pump
         virtual void ProcessMsg(void * msg) = 0;
 
         // May want to override these for cleanups etc...
@@ -89,8 +89,8 @@ class ServerCon : public Thread {
         void SetTimeout(int s)          { m_sock->SetTimeout(s);           }
         bool IsConnected(void)          { return m_sock->IsConnected();    }
         time_t LastUpdate(void)         { return m_sock->LastUpdate();     }
-        bool RecvPacket(void ** msg)    { return m_sock->RecvPacket(msg);  }
-        void DeletePacket(void * msg)   { return m_sock->DeletePacket(msg);}
+        bool RecvMsg(void ** msg)       { return m_sock->RecvMsg(msg);  }
+        void DeleteMsg(void * msg)      { return m_sock->DeleteMsg(msg);}
         
     protected:
         // Setup thread and unpause

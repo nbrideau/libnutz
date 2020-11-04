@@ -1,4 +1,5 @@
 
+#include <google/protobuf/message.h>
 #include "protosock.h"
 #include "exception.h"
 
@@ -31,35 +32,42 @@ ProtoSock::~ProtoSock(void) {
     return;
 }
 
-void  ProtoSock::DeletePacket(void * msg) {
-    // FIXME XXX
-    //delete (google::Message *)msg;
+void  ProtoSock::DeleteMsg(void * msg) {
+    delete (google::protobuf::Message *)msg;
 }
 
 /*****************************************************************************
  * SEND
+ * TODO Serialize and send as a single buffer?
+ * TODO Use google::protobuf namespace
+ * TODO Use something smaller than long unsigned int. 2 bytes? 
  *****************************************************************************/
-bool ProtoSock::SendPacket(void * send) {
-    /*
-    std::string msg;
-    if (!send) return false;
-    if (!((google::Message *)send)->SerializeToString(&msg)) 
+bool ProtoSock::SendMsg(void * send) {
+    std::string buff;
+    google::protobuf::Message * msg = (google::protobuf::Message *)send;
+    if (!msg) return false;
+    
+    if (!msg->SerializeToString(&buff)) {
+        delete msg;
         return false;
+    }
 
 #ifdef DEBUG_PACKETS
-    Log(LL_DEBUG, "SEND: <%s>", msg->GetFirstChild()->Name()); FIXME
+    Log(LL_DEBUG, "SEND: <%s>", buff.c_str()); // FIXME Just send message type
 #endif
-
-    //Log(LL_DEBUG, "[SENDING] %s", msg.c_str());
-    // TODO Send serialized length followed by serialized buffer
-    int rv = Send(msg->GetBuff(), msg->GetBuffLen());
-    if (rv != (int)msg->GetBuffLen()) {
+    //Log(LL_DEBUG, "[SENDING] %s", buff.c_str()); // PP output?
+    
+    // Send the length the the buffer
+    size_t size = msg->ByteSizeLong();
+    if (Send((byte *)&size, sizeof(size_t)) != sizeof(size_t) 
+        || Send((byte *)buff.c_str(), size) != size) {
         //Log(LL_ERROR, "%d != %d", rv, (int)msg->GetBuffLen());
-        delete (google::Message *)send;
-        throw Exception("[::SendPacket] Packet not sent");
+        delete (google::protobuf::Message *)send;
+        throw Exception("[::SendMsg] Msg not sent");
     }
-    delete (google::Message *)send;
-    */
+
+
+    delete (google::protobuf::Message *)send;
     return true;
 }
 
@@ -67,7 +75,7 @@ bool ProtoSock::SendPacket(void * send) {
 /*****************************************************************************
  * RECV
  *****************************************************************************/
-bool ProtoSock::RecvPacket(void ** recv) {
+bool ProtoSock::RecvMsg(void ** recv) {
     // TODO Recieve length + buffer[length] unserialize...
     /*
     bool done = false;
@@ -86,11 +94,11 @@ bool ProtoSock::RecvPacket(void ** recv) {
         recved = Recv(m_buff + m_brecv, MAX_PACKET_SIZE - m_brecv);
         if (m_brecv + recved >= MAX_PACKET_SIZE) {
             //m_buff[m_brecv + 1] = '\0';
-            //Log(LL_ERROR, "Message %s", m_buff);
-            throw Exception("[::RecvPacket] Packet too large");
+            //Log(LL_ERROR, "Msg %s", m_buff);
+            throw Exception("[::RecvMsg] Msg too large");
         }
         if (recved < 0) 
-            throw Exception("[::RecvPacket] Error reading from socket");
+            throw Exception("[::RecvMsg] Error reading from socket");
         if (recved == 0)
             return false;
 

@@ -42,9 +42,9 @@ class SockBase : public ClassLogger {
     
     public:
         // Override these to send and receive messages
-        virtual bool RecvPacket(void  ** msg) = 0;
-        virtual bool SendPacket(void   * msg) = 0;
-        virtual void DeletePacket(void * msg) = 0; /**< Memory management */
+        virtual bool RecvMsg(void  ** msg) = 0;
+        virtual bool SendMsg(void   * msg) = 0;
+        virtual void DeleteMsg(void * msg) = 0; /**< Memory management */
 
         // 
 

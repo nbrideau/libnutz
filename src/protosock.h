@@ -20,9 +20,13 @@ class ProtoSock : public SockBase {
         virtual ~ProtoSock(void);
 
     public:
-        virtual bool RecvPacket(void ** msg);
-        virtual bool SendPacket(void *  msg);
-        virtual void DeletePacket(void * msg);
+        virtual bool RecvMsg(void ** msg);
+        virtual bool SendMsg(void *  msg);
+
+        // XXX I can't remember why exactly I did this.
+        // Could have been a memory leak but I remember
+        // something about library or thread boundaries.
+        virtual void DeleteMsg(void * msg); 
 
     private:
         byte        m_buff[MAX_PACKET_SIZE];

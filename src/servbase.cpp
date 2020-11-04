@@ -401,7 +401,7 @@ void * ServBase::accept_thread(void * arg) {
     while (con->Loop() && con->Socket()->IsConnected()) {           
         try {
             // timeout
-            if (!con->RecvPacket(&msg)) {
+            if (!con->RecvMsg(&msg)) {
                 // 10 minute disconnect
                 if ((time(NULL) - con->LastUpdate()) > 900) {
                     con->Server()->Log(LL_DEBUG, "15 minute timeout disconnecting.");
@@ -413,7 +413,7 @@ void * ServBase::accept_thread(void * arg) {
                 con->Server()->Log(LL_DEBUG, "No packet!");
             else {
                 con->ProcessMsg(msg);
-                con->DeletePacket(msg);
+                con->DeleteMsg(msg);
             }
         } catch (Exception & e) {
             if (e.Severity() != GE_NONE) 
