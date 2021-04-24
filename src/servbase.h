@@ -85,16 +85,16 @@ class ServerCon : public Thread {
 
     // Socket Crap
     protected:
-        bool Close(void)                { return m_sock->Close();          }
-        void SetTimeout(int s)          { m_sock->SetTimeout(s);           }
-        bool IsConnected(void)          { return m_sock->IsConnected();    }
-        time_t LastUpdate(void)         { return m_sock->LastUpdate();     }
-        bool RecvMsg(void ** msg)       { return m_sock->RecvMsg(msg);  }
-        void DeleteMsg(void * msg)      { return m_sock->DeleteMsg(msg);}
+        bool Close(void)                { return m_sock->Close();           }
+        void SetTimeout(int s)          { m_sock->SetTimeout(s);            }
+        bool IsConnected(void)          { return m_sock->IsConnected();     }
+        time_t LastUpdate(void)         { return m_sock->LastUpdate();      }
+        bool RecvMsg(void ** msg)       { return m_sock->RecvMsg(msg);      }
+        void DeleteMsg(void * msg)      { return m_sock->DeleteMsg(msg);    }
         
     protected:
         // Setup thread and unpause
-        void          SetThreadId(pthread_t tid);
+        void        SetThreadId(pthread_t tid);
         
     protected:
         void        Run(void) {} // Just using thread control 
@@ -128,7 +128,7 @@ class ServBase : public Thread  {
         virtual void Run(void);
 
     public:
-        Addr * GetAddr(void)   { return &m_addr; }
+        Addr * GetAddr(void)     { return &m_addr; }
         int  GetNumClients(void) { return m_pool.GetNumThreads(); }
 
     private:

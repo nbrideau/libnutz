@@ -23,7 +23,7 @@ ServerConPool::~ServerConPool(void) {
     Thread::Stop();
     // Shutdown all other threads
     Shutdown();
-    while (m_threads.Size()) usleep(1000000);
+    while (m_threads.Size()) usleep(10000); // FIXME
     return;
 }
 
@@ -109,8 +109,8 @@ bool ServerConPool::Start(void *(*pthread_func)(void *), ServerCon * arg) {
     return true;
 }
 
-// NB No longer Used
 // Threadpool houskeeping routine
+// NB No longer Used XXX?
 void ServerConPool::Run(void) {
 
     // Hack to make sure the threads all get cleaned up on shutdown.

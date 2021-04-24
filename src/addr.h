@@ -7,9 +7,7 @@
 
 #include <netinet/in.h>
 #include "logger.h"
-
-// FIXME
-typedef unsigned char byte;
+#include "buffer.h"
 
 /**
  @class Addr 
