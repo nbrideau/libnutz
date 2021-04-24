@@ -13,7 +13,7 @@
  @class Addr 
     Encapsulated internet addresses 
 
-    TODO: IPV6?
+    TODO: IPV6? Sound sfun.
 */
 class Addr : ClassLogger {
     public:
